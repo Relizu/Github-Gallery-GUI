@@ -9,6 +9,7 @@ import requests
 class galleryPage(QWidget):
     def __init__(self, parent):
         super().__init__()
+        self.p = parent
         self.user_token = parent.token
         self.g = Github(self.user_token)
 
@@ -50,5 +51,5 @@ class galleryPage(QWidget):
         galleryArea.setWidget(contentwidget)
 
         for repo in self.g.get_user().get_repos():
-            contentlayout.addWidget(galleryItem(repo.name))
+            contentlayout.addWidget(galleryItem(repo,parent=self))
         
