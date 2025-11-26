@@ -2,6 +2,8 @@ from PySide6.QtWidgets import QWidget ,QLabel ,QPushButton ,QVBoxLayout ,QSpacer
 from PySide6.QtCore import Qt
 import requests
 import time
+import keyring
+from github import Github
 import threading
 
 class loginPage(QWidget):
@@ -28,13 +30,19 @@ class loginPage(QWidget):
         layout = QVBoxLayout(self)
         ll = QLabel()
         ll.setText("مرحبا...")
-        
+        layout.addSpacerItem(QSpacerItem(20, 40, QSizePolicy.Minimum, QSizePolicy.Expanding))
+        layout.addWidget(ll)
+        if keyring.get_password("githubgallery", "github_access_token"):
+            loginAs= QPushButton("دخول ك"+Github(keyring.get_password("githubgallery", "github_access_token")).get_user().name)
+            loginAs.setFixedSize(200,60)
+            loginAs.clicked.connect(self.login_As)
+            layout.addWidget(loginAs,alignment=Qt.AlignCenter)
+
         LoginButton = QPushButton("تسجيل دخول باستخدام جيت هب",self)
         LoginButton.setFixedSize(200,60)
         LoginButton.clicked.connect(self.start_login)
 
-        layout.addSpacerItem(QSpacerItem(20, 40, QSizePolicy.Minimum, QSizePolicy.Expanding))
-        layout.addWidget(ll)
+        
         layout.addWidget(LoginButton,alignment=Qt.AlignCenter)        
         layout.addSpacerItem(QSpacerItem(20, 40, QSizePolicy.Minimum, QSizePolicy.Expanding))
     
@@ -42,7 +50,7 @@ class loginPage(QWidget):
         
         resp = requests.post(
             "https://github.com/login/device/code",
-            data={"client_id": self.CLIENT_ID, "scope": "read:user"},
+            data={"client_id": self.CLIENT_ID, "scope": "repo read:user"},
             headers={"Accept": "application/json"}
         )
         data = resp.json()
@@ -76,5 +84,8 @@ class loginPage(QWidget):
                 self.p.token = access_token
                 self.p.goto_gallery()
                 print(access_token)
+                keyring.set_password("githubgallery", "github_access_token", access_token)
                 return
-    
+    def login_As(self):
+        self.p.token = keyring.get_password("githubgallery", "github_access_token")
+        self.p.goto_gallery()

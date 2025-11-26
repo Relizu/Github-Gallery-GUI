@@ -1,4 +1,4 @@
-from PySide6.QtWidgets import QWidget ,QVBoxLayout ,QHBoxLayout , QScrollArea ,QPushButton ,QLabel
+from PySide6.QtWidgets import QWidget ,QVBoxLayout ,QHBoxLayout , QScrollArea ,QPushButton, QLabel, QDialog, QLineEdit, QRadioButton, QCheckBox
 from PySide6.QtCore import Qt
 from PySide6.QtGui import QPixmap
 
@@ -37,6 +37,7 @@ class galleryPage(QWidget):
         AddButton = QPushButton("+")
         AddButton.setStyleSheet("""border: 1px solid white;border-radius:10px; font-size:40px;""")
         AddButton.setFixedSize(50,50)
+        AddButton.clicked.connect(self.add_repo)
 
         topperLayout.addWidget(profile)
         topperLayout.addWidget(AddButton)
@@ -52,4 +53,51 @@ class galleryPage(QWidget):
 
         for repo in self.g.get_user().get_repos():
             contentlayout.addWidget(galleryItem(repo,parent=self))
-        
+    
+    def add_repo(self):
+        msg = QDialog()
+        msg.setWindowTitle("اضافه ريبو")
+
+        main_layout = QVBoxLayout()
+
+        main_layout.addWidget(QLabel("العنوان"))
+        title_input = QLineEdit()
+        main_layout.addWidget(title_input)
+
+        main_layout.addWidget(QLabel("الوصف"))
+        description_input = QLineEdit()
+        main_layout.addWidget(description_input)
+
+        publicbtn =QRadioButton("عام")
+        main_layout.addWidget(publicbtn)
+
+        privatebtn =QRadioButton("خاص")
+        main_layout.addWidget(privatebtn)
+
+        publicbtn.setChecked(True)
+
+        main_layout.addWidget(QLabel("اضافه ملف اقرأني(README.md)"))
+        readmebtn =QCheckBox()
+        main_layout.addWidget(readmebtn)
+
+        button_layout = QHBoxLayout()
+        submit_btn = QPushButton("اضافة")
+        cancel_btn = QPushButton("الغاء")
+        button_layout.addWidget(submit_btn)
+        button_layout.addWidget(cancel_btn)
+        main_layout.addLayout(button_layout)
+
+        submit_btn.clicked.connect(msg.accept)
+        cancel_btn.clicked.connect(msg.reject)
+
+        msg.setLayout(main_layout)
+        print(self.g.get_user())
+        if msg.exec() == QDialog.Accepted:
+            self.g.get_user().create_repo(
+                name=title_input.text().strip().replace(" ", "-"),
+                description=description_input.text(),
+                private=privatebtn.isChecked(),  
+                auto_init=readmebtn.isChecked()  
+            )
+        else:
+            return None
