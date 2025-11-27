@@ -1,6 +1,6 @@
 from PySide6.QtWidgets import QWidget ,QVBoxLayout ,QHBoxLayout , QScrollArea ,QPushButton, QLabel, QDialog, QLineEdit, QRadioButton, QCheckBox
 from PySide6.QtCore import Qt
-from PySide6.QtGui import QPixmap
+from PySide6.QtGui import QPixmap, QPainter
 
 from galleryItem import galleryItem
 from github import Github
@@ -26,13 +26,28 @@ class galleryPage(QWidget):
         topper.setFixedHeight(70)
         topperLayout =QHBoxLayout(topper)
         
-        profile=QLabel()
-        profile.setFixedWidth(50)
-        profile.setStyleSheet("border: 0px")
+        profile = QLabel()
+        profile.setStyleSheet("border:0;")
+        profile.setFixedSize(50, 50)
+
         pixmap = QPixmap()
         pixmap.loadFromData(requests.get(self.g.get_user().avatar_url).content)
-        pixmap =  pixmap.scaled(50, 50, Qt.KeepAspectRatio, Qt.SmoothTransformation)
+        pixmap = pixmap.scaled(50, 50, Qt.KeepAspectRatioByExpanding, Qt.SmoothTransformation)
+
+        mask = QPixmap(50, 50)
+        mask.fill(Qt.transparent)
+
+        painter = QPainter(mask)
+        painter.setRenderHint(QPainter.Antialiasing)
+        painter.setBrush(Qt.white)
+        painter.setPen(Qt.NoPen)
+        painter.drawEllipse(0, 0, 50, 50)
+        painter.end()
+
+        pixmap.setMask(mask.createMaskFromColor(Qt.transparent))
+
         profile.setPixmap(pixmap)
+
 
         AddButton = QPushButton("+")
         AddButton.setStyleSheet("""border: 1px solid white;border-radius:10px; font-size:40px;""")
@@ -48,12 +63,20 @@ class galleryPage(QWidget):
         layout.addWidget(topper)
         layout.addWidget(galleryArea)
         contentwidget= QWidget()
-        contentlayout = QHBoxLayout(contentwidget)
+        self.contentlayout = QHBoxLayout(contentwidget)
         galleryArea.setWidget(contentwidget)
 
         for repo in self.g.get_user().get_repos():
-            contentlayout.addWidget(galleryItem(repo,parent=self))
+            self.contentlayout.addWidget(galleryItem(repo,parent=self))
     
+    def update(self):
+        while self.contentlayout.count():
+            item = self.contentlayout.takeAt(0)
+            if item.widget():
+                item.widget().setParent(None)
+        for repo in self.g.get_user().get_repos():
+            self.contentlayout.addWidget(galleryItem(repo,parent=self))
+
     def add_repo(self):
         msg = QDialog()
         msg.setWindowTitle("اضافه ريبو")
@@ -99,5 +122,6 @@ class galleryPage(QWidget):
                 private=privatebtn.isChecked(),  
                 auto_init=readmebtn.isChecked()  
             )
+            self.update()
         else:
             return None

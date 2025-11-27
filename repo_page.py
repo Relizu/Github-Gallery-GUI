@@ -1,4 +1,5 @@
-from PySide6.QtWidgets import QWidget ,QVBoxLayout ,QLabel ,QPushButton ,QScrollArea ,QSpacerItem, QSizePolicy, QTextBrowser
+from PySide6.QtWidgets import QWidget ,QVBoxLayout ,QLabel ,QPushButton ,QScrollArea ,QSpacerItem, QSizePolicy, QTextBrowser, QFileDialog ,QDialog ,QLineEdit, QHBoxLayout
+from PySide6.QtCore import QFileInfo
 import markdown
 import base64
 import requests
@@ -9,6 +10,10 @@ class repoPage(QWidget):
         self.p = parent
         self.repo = repo
         self.currentdir=""
+        self.setStyleSheet("""
+        border: 0;
+        """)
+
         main_layout = QVBoxLayout(self)
 
         content = QScrollArea()
@@ -31,26 +36,30 @@ class repoPage(QWidget):
         downloadButton= QPushButton("تنزيل")
         downloadButton.clicked.connect(self.downloadrepo)
 
+        uploadfileButton= QPushButton("رفع ملف")
+        uploadfileButton.clicked.connect(self.uploadfile)
+
+
+
         self.dirLayout= QVBoxLayout()
 
         layout.addWidget(backButton)
         layout.addWidget(name)
         layout.addWidget(description)
         layout.addWidget(downloadButton)
-        layout.addLayout(self.dirLayout)
+        layout.addWidget(uploadfileButton)
+        dircontainer =QWidget()
+        dircontainer.setStyleSheet("background-color:#2A2A2A; border:1px solid white;")
+        dircontainer.setLayout(self.dirLayout)
+        layout.addWidget(dircontainer)
         try:
-            for i in repo.get_contents(self.currentdir):
-                if i.type =="dir":
-                    tempLabelbtn=QPushButton("📁"+i.name)
-                    tempLabelbtn.clicked.connect(lambda checked=False, b=tempLabelbtn: self.updateDir(b))
-                    self.dirLayout.addWidget(tempLabelbtn)
-                else:
-                    tempLabelbtn=QPushButton("📄"+i.name)
-                    
-                    self.dirLayout.addWidget(tempLabelbtn)
+            self.update()
         except:
             print("empty probably")
+        
         viewer = QTextBrowser()
+        viewer.setStyleSheet("border:1px solid white;")
+
         try:
             if repo.get_contents(self.currentdir+"README.md"):
                 viewer.setHtml(markdown.markdown(base64.b64decode(repo.get_contents(self.currentdir+"README.md").content).decode("utf-8"), extensions=["fenced_code"]))
@@ -59,22 +68,30 @@ class repoPage(QWidget):
         viewer.setOpenExternalLinks(True) 
         layout.addWidget(viewer)
 
-    
-    def updateDir(self, sender):
+    def update(self):
         while self.dirLayout.count():
             item = self.dirLayout.takeAt(0)
             if item.widget():
                 item.widget().setParent(None)
-        self.currentdir +="/"+sender.text()[1:]
         for i in self.repo.get_contents(self.currentdir):
+            fileLayout=QHBoxLayout()
+            removefilebtn=QPushButton("x")
+            removefilebtn.setFixedWidth(30)
+            removefilebtn.clicked.connect(lambda checked=False, b=removefilebtn: self.deleteFile(b))
             if i.type =="dir":
                 tempLabelbtn=QPushButton("📁"+i.name)
                 tempLabelbtn.clicked.connect(lambda checked=False, b=tempLabelbtn: self.updateDir(b))
-                self.dirLayout.addWidget(tempLabelbtn)
             else:
                 tempLabelbtn=QPushButton("📄"+i.name)
-                tempLabelbtn.clicked.connect(lambda checked=False, b=tempLabelbtn: self.updateDir(b))
-                self.dirLayout.addWidget(tempLabelbtn)
+            tempLabelbtn.setStyleSheet("border-top:1px solid white;")
+            removefilebtn.file=tempLabelbtn
+            fileLayout.addWidget(tempLabelbtn)
+            fileLayout.addWidget(removefilebtn)
+            self.dirLayout.addLayout(fileLayout)
+
+    def updateDir(self, sender):
+        self.currentdir +="/"+sender.text()[1:]
+        self.update()
     
     def downloadrepo(self):
         zip_url = self.repo.get_archive_link(archive_format="zipball", ref="main") 
@@ -82,3 +99,71 @@ class repoPage(QWidget):
         response = requests.get(zip_url)
         with open("downloads/"+self.repo.name+".zip", "wb") as f:
             f.write(response.content)
+    
+    def uploadfile(self):
+        file_path, _ = QFileDialog.getOpenFileName(None, "Open File", "", "All Files (*)")
+        info =QFileInfo(file_path)
+
+        with open(file_path, "r", encoding="utf-8") as f:
+            content = f.read()
+
+        msg = QDialog()
+        msg.setWindowTitle("اضافه رساله")
+        main_layout = QVBoxLayout()
+
+        main_layout.addWidget(QLabel("الرساله"))
+        commit_input = QLineEdit()
+        main_layout.addWidget(commit_input)
+
+        button_layout = QHBoxLayout()
+        submit_btn = QPushButton("اضافة")
+        cancel_btn = QPushButton("الغاء")
+        button_layout.addWidget(submit_btn)
+        button_layout.addWidget(cancel_btn)
+        main_layout.addLayout(button_layout)
+        submit_btn.clicked.connect(msg.accept)
+        cancel_btn.clicked.connect(msg.reject)
+
+        msg.setLayout(main_layout)
+        if msg.exec() == QDialog.Accepted:
+            if self.currentdir=="":
+                self.repo.create_file(info.fileName(),commit_input.text(),content)
+            else:
+                self.repo.create_file(self.currentdir+"/"+info.fileName(),commit_input.text(),content)
+            
+            self.update()
+        else:
+            return None
+        
+    def deleteFile(self, sender):
+        msg = QDialog()
+        msg.setWindowTitle("حذف ملف")
+        main_layout = QVBoxLayout()
+
+        main_layout.addWidget(QLabel("الرساله"))
+        commit_input = QLineEdit()
+        main_layout.addWidget(commit_input)
+
+        main_layout.addWidget(QLabel("هل متأكد انك تريد حذف الملف؟"))
+
+        button_layout = QHBoxLayout()
+        submit_btn = QPushButton("حذف")
+        cancel_btn = QPushButton("الغاء")
+        button_layout.addWidget(submit_btn)
+        button_layout.addWidget(cancel_btn)
+        main_layout.addLayout(button_layout)
+        submit_btn.clicked.connect(msg.accept)
+        cancel_btn.clicked.connect(msg.reject)
+
+        msg.setLayout(main_layout)
+        if msg.exec() == QDialog.Accepted:
+            if self.currentdir=="":
+                filec =self.repo.get_contents(sender.file.text()[1:])
+            else:
+                filec =self.repo.get_contents(self.currentdir+"/"+sender.file.text()[1:])
+
+            self.repo.delete_file(filec.path,commit_input.text(),filec.sha)
+
+            self.update()
+        else:
+            return None

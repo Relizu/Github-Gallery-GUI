@@ -12,7 +12,6 @@ class mainWindow(QStackedWidget):
         self.setStyleSheet("""
             background-color:#1f1f1f;
             color: white;
-            border-radius:30px;
         """)
         self.addWidget(loginPage(parent=self))
         
