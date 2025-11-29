@@ -2,7 +2,7 @@ from PySide6.QtWidgets import QWidget ,QVBoxLayout ,QHBoxLayout , QScrollArea ,Q
 from PySide6.QtCore import Qt
 from PySide6.QtGui import QPixmap, QPainter
 
-from galleryItem import galleryItem
+from .galleryItem import galleryItem
 from github import Github
 import requests
 

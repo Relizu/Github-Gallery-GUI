@@ -1,7 +1,7 @@
 from PySide6.QtWidgets import QStackedWidget ,QLabel
-from loginPage import loginPage
-from GalleryPage import galleryPage
-from repo_page import repoPage
+from .loginPage import loginPage
+from .GalleryPage import galleryPage
+from .repo_page import repoPage
 
 class mainWindow(QStackedWidget):
     def __init__(self):

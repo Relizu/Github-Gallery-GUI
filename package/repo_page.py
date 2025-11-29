@@ -4,6 +4,7 @@ from PySide6.QtWidgets import QPlainTextEdit
 import markdown
 import base64
 import requests
+import os
 
 class repoPage(QWidget):
     def __init__(self,repo,parent):
@@ -131,7 +132,8 @@ class repoPage(QWidget):
         zip_url = self.repo.get_archive_link(archive_format="zipball", ref="main") 
 
         response = requests.get(zip_url)
-        with open("downloads/"+self.repo.name+".zip", "wb") as f:
+        downloads_path = os.path.join(os.getcwd(), "downloads", self.repo.name + ".zip")
+        with open(downloads_path, "wb") as f:
             f.write(response.content)
     
     def uploadfile(self):
