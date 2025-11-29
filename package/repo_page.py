@@ -1,5 +1,5 @@
 from PySide6.QtWidgets import QWidget ,QVBoxLayout ,QLabel ,QPushButton ,QScrollArea ,QSpacerItem, QSizePolicy, QTextBrowser, QFileDialog ,QDialog ,QLineEdit, QHBoxLayout, QStackedWidget
-from PySide6.QtCore import QFileInfo
+from PySide6.QtCore import QFileInfo, Qt
 from PySide6.QtWidgets import QPlainTextEdit
 import markdown
 import base64
@@ -50,6 +50,16 @@ class repoPage(QWidget):
         layout.addWidget(description)
         layout.addWidget(downloadButton)
         layout.addWidget(uploadfileButton)
+
+        dirlayout= QHBoxLayout()
+        backdir =QPushButton("<")
+        backdir.setStyleSheet("border: 1px solid white;")
+        self.dirlabel =QLabel(self.currentdir)
+        backdir.clicked.connect(self.backfolder)
+        dirlayout.addWidget(backdir)
+        dirlayout.addWidget(self.dirlabel)
+        layout.addLayout(dirlayout)
+
         dircontainer =QWidget()
         dircontainer.setStyleSheet("background-color:#2A2A2A; border:1px solid white;")
         dircontainer.setLayout(self.dirLayout)
@@ -82,6 +92,7 @@ class repoPage(QWidget):
         layout.addWidget(self.viewer)
 
     def update(self):
+        self.dirlabel.setText(self.currentdir)
         while self.dirLayout.count():
             item = self.dirLayout.takeAt(0)
             if item.widget():
@@ -249,3 +260,10 @@ class repoPage(QWidget):
             self.update()
         else:
             return None
+    
+    def backfolder(self):
+        self.currentdir = self.currentdir.replace("\\", "/").rstrip("/")
+        if self.currentdir != "":
+            self.currentdir = os.path.dirname(self.currentdir)
+        self.currentdir = self.currentdir.rstrip("/")
+        self.update()
