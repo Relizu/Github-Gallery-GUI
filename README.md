@@ -36,7 +36,7 @@ cd Github-Gallery-GUI
 ```
 Install dependencies (make sure you have Python 3.x installed):
 ```bash
-pip install PySide6 PyGithub requests markdown matplotlib
+pip install PySide6 PyGithub requests markdown matplotlib keyring
 ```
 
 ## Usage
